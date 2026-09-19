@@ -11,6 +11,10 @@ export const authMiddleware = (
   next: NextFunction
 ) => {
   try {
+    console.log(
+            "JWT secret exists:",
+            !!process.env.JWT_SECRET
+        );
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -24,12 +28,15 @@ export const authMiddleware = (
     const decoded = jwt.verify(
       token,
       process.env.JWT_SECRET as string
-    ) as JwtPayload;
+    ) as {userId: string};
 
-    (req as Request & { user: JwtPayload }).user = decoded;
+    req.user={
+      userId:decoded.userId
+    };
 
     next();
   } catch (error) {
+     console.error("JWT ERROR:", error);
     return res.status(401).json({
       message: "Invalid or expired token",
     });

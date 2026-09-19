@@ -3,7 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import connectDB from './config/db.js';
 import authRoutes from './routes/auth.routes.js';
-
+import userRoutes from './routes/user.routes.js';
 dotenv.config();
 
 // Database
@@ -18,27 +18,21 @@ app.use(
     })
 );
 
-// Middleware to parse JSON request bodies
-app.use(express.json());
-
-// Authentication routes
-app.use('/api/auth', authRoutes);
 
 // Test route
 app.get('/', (req, res) => {
     res.send('Express server is running!');
 });
 
-// Example API route
-app.get('/api/users', (req, res) => {
-    res.json({
-        users: [
-            { id: 1, name: 'John' },
-            { id: 2, name: 'Alice' },
-            { id: 3, name: 'Bob' }
-        ]
-    });
-});
+// Middleware to parse JSON request bodies
+app.use(express.json());
+
+// Authentication routes
+app.use('/api/auth', authRoutes);
+
+//to get all users
+app.use('/api/users',userRoutes);
+
 
 const PORT = process.env.PORT || 8000;
 
