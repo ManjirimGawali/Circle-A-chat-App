@@ -39,3 +39,55 @@ export const getAllUsers = async (
         });
     }
 };
+
+export const searchUsers = async (
+    req: Request,
+    res: Response
+) => {
+    try {
+
+        const currentUserId = req.user?.userId;
+        const searchQuery = req.query.q as string;
+
+        console.log("Current User ID:", currentUserId);
+        console.log("Search Query:", searchQuery);
+
+        if (!currentUserId) {
+            return res.status(401).json({
+                message: "Unauthorized"
+            });
+        }
+
+        if (!searchQuery) {
+            return res.status(200).json({
+                users: []
+            });
+        }
+
+        const users = await User.find({
+            _id: {
+                $ne: currentUserId
+            },
+            username: {
+                $regex: searchQuery,
+                $options: "i"
+            }
+        }).select(
+            "_id username email profilePicture status isOnline lastSeen"
+        );
+
+        console.log("Found Users:", users);
+
+        return res.status(200).json({
+            users
+        });
+
+    } catch (error) {
+
+        console.error("Search users error:", error);
+
+        return res.status(500).json({
+            message: "Internal server error"
+        });
+    }
+};

@@ -27,10 +27,9 @@ const NewChatModal = ({
 
     const [error, setError] =
         useState("");
-
-    useEffect(() => {
-
-        const fetchUsers = async () => {
+    const [searchTerm, setSearchTerm] =
+    useState("");
+    const fetchUsers = async () => {
 
             try {
 
@@ -71,12 +70,59 @@ const NewChatModal = ({
                 setLoading(false);
 
             }
-        };
+    };
 
+    useEffect(() => {
         fetchUsers();
 
     }, []);
 
+const searchUsers = async () => {
+    try {
+        const token = localStorage.getItem("token");
+
+        const response = await fetch(
+            `http://localhost:8000/api/users/search?q=${encodeURIComponent(searchTerm)}`,
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(
+                data.message || "Failed to search users"
+            );
+        }
+
+        setUsers(data.users);
+
+    } catch (error) {
+        console.error("Search users error:", error);
+    }
+};
+
+    useEffect(() => {
+
+    if (!searchTerm.trim()) {
+        fetchUsers ();
+        return;
+    }
+
+    const timer = setTimeout(() => {
+
+        searchUsers();
+
+    }, 500);
+
+    return () => {
+        clearTimeout(timer);
+    };
+
+}, [searchTerm]);
 
     return (
 
@@ -111,6 +157,10 @@ const NewChatModal = ({
                     <input
                         type="text"
                         placeholder="Search users..."
+                        value={searchTerm}
+                        onChange={(event) =>
+                            setSearchTerm(event.target.value)
+                        }
                     />
 
                 </div>
