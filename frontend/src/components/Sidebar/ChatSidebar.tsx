@@ -163,7 +163,9 @@ const ChatSidebar = () => {
 
                     <div className="profile-avatar">
 
-                        N
+                        {
+                            currentUser.username?.charAt(0).toUpperCase()
+                        }
 
                         <span className="online-dot" />
 
