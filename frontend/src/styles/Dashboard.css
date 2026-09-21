@@ -466,3 +466,26 @@
 .modal-error {
     color: #9a5b55;
 }
+
+.chat-message {
+    margin: 12px 0;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.chat-message.success {
+    background: #e7f2e8;
+    color: #315c3a;
+}
+
+.chat-message.info {
+    background: #f3eee3;
+    color: #66583c;
+}
+
+.chat-message.error {
+    background: #f8e5e3;
+    color: #8a3f38;
+}

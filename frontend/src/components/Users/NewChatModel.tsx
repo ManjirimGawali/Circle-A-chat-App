@@ -1,6 +1,9 @@
 import { Search, X } from "lucide-react";
 import { useEffect, useState } from "react";
+
 import "../../styles/Dashboard.css";
+import { createPrivateConversation } from "../../services/conversationService";
+
 interface User {
     _id: string;
     username: string;
@@ -13,10 +16,12 @@ interface User {
 
 interface NewChatModalProps {
     onClose: () => void;
+     onConversationCreated: () => void;
 }
 
 const NewChatModal = ({
-    onClose
+    onClose,
+    onConversationCreated
 }: NewChatModalProps) => {
 
     const [users, setUsers] =
@@ -29,6 +34,13 @@ const NewChatModal = ({
         useState("");
     const [searchTerm, setSearchTerm] =
     useState("");
+    const [creatingChat, setCreatingChat] = useState(false);
+
+    const [chatMessage, setChatMessage] = useState("");
+
+    const [chatMessageType, setChatMessageType] = useState<
+    "success" | "info" | "error"
+>("success");
     const fetchUsers = async () => {
 
             try {
@@ -124,6 +136,69 @@ const searchUsers = async () => {
 
 }, [searchTerm]);
 
+
+
+const handleStartChat = async (
+    userId: string,
+    username: string
+) => {
+
+    try {
+
+        setCreatingChat(true);
+
+        setChatMessage("");
+        setChatMessageType("success");
+
+        const data =
+            await createPrivateConversation(userId);
+
+        if (
+            data.message ===
+            "Private conversation created"
+        ) {
+
+            setChatMessage(
+                `Chat with ${username} created successfully!`
+            );
+
+            setChatMessageType("success");
+
+            onConversationCreated();
+
+        } else if (
+            data.message ===
+            "Conversation already exists"
+        ) {
+
+            setChatMessage(
+                `Chat with ${username} already exists.`
+            );
+
+            setChatMessageType("info");
+               onConversationCreated();
+        }
+
+    } catch (error) {
+
+        console.error(
+            "Start chat error:",
+            error
+        );
+
+        setChatMessage(
+            `Unable to create chat with ${username}.`
+        );
+
+        setChatMessageType("error");
+
+    } finally {
+
+        setCreatingChat(false);
+
+    }
+};
+
     return (
 
         <div className="modal-overlay">
@@ -165,6 +240,15 @@ const searchUsers = async () => {
 
                 </div>
 
+                 {/* Chat Message */}
+
+{chatMessage && (
+    <div
+        className={`chat-message ${chatMessageType}`}
+    >
+        {chatMessage}
+    </div>
+)}
 
                 {/* Users */}
 
@@ -221,11 +305,18 @@ const searchUsers = async () => {
 
                                 </div>
 
-                                <button
-                                    className="user-add-button"
-                                >
-                                    +
-                                </button>
+                            <button
+    className="user-add-button"
+    onClick={() =>
+        handleStartChat(
+            user._id,
+            user.username
+        )
+    }
+    disabled={creatingChat}
+>
+    {creatingChat ? "..." : "+"}
+</button>
 
                             </div>
 

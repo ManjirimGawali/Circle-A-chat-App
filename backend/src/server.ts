@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import connectDB from './config/db.js';
 import authRoutes from './routes/auth.routes.js';
 import userRoutes from './routes/user.routes.js';
+import conversationRoutes from './routes/conversation.routes.js';
 dotenv.config();
 
 // Database
@@ -33,6 +34,8 @@ app.use('/api/auth', authRoutes);
 //to get all users
 app.use('/api/users',userRoutes);
 
+// Conversation routes
+app.use("/api/conversations",conversationRoutes)
 
 const PORT = process.env.PORT || 8000;
 
