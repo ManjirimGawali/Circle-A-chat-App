@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import connectDB from './config/db.js';
 import authRoutes from './routes/auth.routes.js';
 import userRoutes from './routes/user.routes.js';
+import messageRoutes from "./routes/message.routes.js";
 import conversationRoutes from './routes/conversation.routes.js';
 dotenv.config();
 
@@ -36,6 +37,12 @@ app.use('/api/users',userRoutes);
 
 // Conversation routes
 app.use("/api/conversations",conversationRoutes)
+
+//Message routes
+app.use(
+    "/api/messages",
+    messageRoutes
+);
 
 const PORT = process.env.PORT || 8000;
 

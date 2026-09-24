@@ -2,331 +2,240 @@ import { Plus, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import "../../styles/Dashboard.css";
-
+import type { SelectedConversation } from "../Chat/ChatLayout";
 import ConversationItem from "./ConversationItem";
 import NewChatModal from "../Users/NewChatModel";
 
 import { getMyConversations } from "../../services/conversationService";
 
-
 interface ConversationUser {
-    _id: string;
-    username: string;
-    email: string;
-    profilePicture?: string;
-    status?: string;
-    isOnline: boolean;
-    lastSeen?: string;
+  _id: string;
+  username: string;
+  email: string;
+  profilePicture?: string;
+  status?: string;
+  isOnline: boolean;
+  lastSeen?: string;
 }
-
 
 interface LastMessage {
-    _id: string;
-    content: string;
-    sender: string;
-    messageType: "text" | "image" | "file";
-    isRead: boolean;
-    createdAt: string;
+  _id: string;
+  content: string;
+  sender: string;
+  messageType: "text" | "image" | "file";
+  isRead: boolean;
+  createdAt: string;
 }
-
 
 interface Conversation {
-    _id: string;
-    participants: ConversationUser[];
+  _id: string;
+  participants: ConversationUser[];
 
-    isGroup: boolean;
-    groupName: string;
+  isGroup: boolean;
+  groupName: string;
 
-    groupAdmin: string | null;
+  groupAdmin: string | null;
 
-    lastMessage: LastMessage | null;
+  lastMessage: LastMessage | null;
 
-    createdAt: string;
-    updatedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+interface ChatSidebarProps {
+  onSelectConversation: (conversationId: SelectedConversation) => void;
+  refreshTrigger:number;
 }
 
+const ChatSidebar = ({ onSelectConversation ,refreshTrigger }: ChatSidebarProps) => {
+  const [showNewChat, setShowNewChat] = useState(false);
 
-const ChatSidebar = () => {
+  const [conversations, setConversations] = useState<Conversation[]>([]);
 
-    const [showNewChat, setShowNewChat] =
-        useState(false);
+  const [loadingConversations, setLoadingConversations] = useState(true);
 
-    const [conversations, setConversations] =
-        useState<Conversation[]>([]);
+  const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+  console.log("Current User:", currentUser);
 
-    const [loadingConversations, setLoadingConversations] =
-        useState(true);
+  const fetchConversations = async () => {
+    try {
+      setLoadingConversations(true);
 
+      const data = await getMyConversations();
 
-    const currentUser = JSON.parse(
-        localStorage.getItem("user") || "{}"
-    );
-    console.log("Current User:", currentUser);
+      setConversations(data.conversations);
+    } catch (error) {
+      console.error("Fetch conversations error:", error);
+    } finally {
+      setLoadingConversations(false);
+    }
+  };
 
+  useEffect(() => {
+    fetchConversations();
+  }, [refreshTrigger]);
 
-    const fetchConversations = async () => {
-
-        try {
-
-            setLoadingConversations(true);
-
-            const data =
-                await getMyConversations();
-
-            setConversations(
-                data.conversations
-            );
-
-        } catch (error) {
-
-            console.error(
-                "Fetch conversations error:",
-                error
-            );
-
-        } finally {
-
-            setLoadingConversations(false);
-
-        }
-
-    };
-
-
-    useEffect(() => {
-
-        fetchConversations();
-
-    }, []);
-
-
-    const getOtherParticipant = (
-    conversation: Conversation
-) => {
-
+  const getOtherParticipant = (conversation: Conversation) => {
     console.log("Current User ID:", currentUser.id);
 
-    console.log(
-        "Conversation Participants:",
-        conversation.participants
+    console.log("Conversation Participants:", conversation.participants);
+
+    conversation.participants.forEach((participant) => {
+      console.log(
+        "Participant:",
+        participant.username,
+        "ID:",
+        participant._id,
+        "Is Current User:",
+        String(participant._id) === String(currentUser.id),
+      );
+    });
+
+    const otherParticipant = conversation.participants.find(
+      (participant) => String(participant._id) !== String(currentUser.id),
     );
 
-    conversation.participants.forEach(
-        (participant) => {
-            console.log(
-                "Participant:",
-                participant.username,
-                "ID:",
-                participant._id,
-                "Is Current User:",
-                String(participant._id) ===
-                    String(currentUser.id)
-            );
-        }
-    );
-
-    const otherParticipant =
-        conversation.participants.find(
-            (participant) =>
-                String(participant._id) !==
-                String(currentUser.id)
-        );
-
-    console.log(
-        "OTHER PARTICIPANT:",
-        otherParticipant
-    );
+    console.log("OTHER PARTICIPANT:", otherParticipant);
 
     return otherParticipant;
-};
+  };
 
-    return (
-        <>
-            <aside className="chat-sidebar">
+  return (
+    <>
+      <aside className="chat-sidebar">
+        {/* Logo */}
 
-                {/* Logo */}
+        <div className="sidebar-header">
+          <div>
+            <h1>Circle.</h1>
 
-                <div className="sidebar-header">
+            <span>A WARMER INTERNET</span>
+          </div>
 
-                    <div>
+          <div className="profile-avatar">
+            {currentUser.username?.charAt(0).toUpperCase()}
 
-                        <h1>
-                            Circle.
-                        </h1>
+            <span className="online-dot" />
+          </div>
+        </div>
 
-                        <span>
-                            A WARMER INTERNET
-                        </span>
+        {/* Search + Add */}
 
-                    </div>
+        <div className="sidebar-actions">
+          <div className="conversation-search">
+            <Search size={19} />
 
+            <input type="text" placeholder="Search conversations..." />
+          </div>
 
-                    <div className="profile-avatar">
+          <button
+            className="new-chat-button"
+            onClick={() => setShowNewChat(true)}
+          >
+            <Plus size={26} />
+          </button>
+        </div>
 
-                        {
-                            currentUser.username?.charAt(0).toUpperCase()
-                        }
+        {/* Conversations */}
 
-                        <span className="online-dot" />
+        <div className="conversation-list">
+          {loadingConversations && <p>Loading conversations...</p>}
 
-                    </div>
+          {!loadingConversations && conversations.length === 0 && (
+            <p>No conversations yet.</p>
+          )}
 
-                </div>
+          {!loadingConversations &&
+            conversations.map((conversation) => {
+              const otherUser = getOtherParticipant(conversation);
 
+              if (!otherUser) {
+                return null;
+              }
 
-                {/* Search + Add */}
+              return (
+                <ConversationItem
+                  key={conversation._id}
+                  name={
+                    conversation.isGroup
+                      ? conversation.groupName
+                      : otherUser.username
+                  }
+                  message={
+                    conversation.lastMessage
+                      ? conversation.lastMessage.content
+                      : "No messages yet"
+                  }
+                  time={new Date(conversation.updatedAt).toLocaleTimeString(
+                    [],
+                    {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    },
+                  )}
+                  avatar={
+                    conversation.isGroup
+                      ? "G"
+                      : otherUser.username.charAt(0).toUpperCase()
+                  }
+                  onClick={() =>
+        onSelectConversation({
 
-                <div className="sidebar-actions">
+            conversationId:
+                conversation._id,
 
-                    <div className="conversation-search">
+            name:
+                conversation.isGroup
+                    ? conversation.groupName
+                    : otherUser.username,
 
-                        <Search size={19} />
+            avatar:
+                conversation.isGroup
+                    ? "G"
+                    : otherUser.username
+                        .charAt(0)
+                        .toUpperCase(),
 
-                        <input
-                            type="text"
-                            placeholder="Search conversations..."
-                        />
+            isOnline:
+                conversation.isGroup
+                    ? false
+                    : otherUser.isOnline
 
-                    </div>
-
-
-                    <button
-                        className="new-chat-button"
-                        onClick={() =>
-                            setShowNewChat(true)
-                        }
-                    >
-
-                        <Plus size={26} />
-
-                    </button>
-
-                </div>
-
-
-                {/* Conversations */}
-
-                <div className="conversation-list">
-
-                    {loadingConversations && (
-                        <p>
-                            Loading conversations...
-                        </p>
-                    )}
-
-
-                    {!loadingConversations &&
-                        conversations.length === 0 && (
-                            <p>
-                                No conversations yet.
-                            </p>
-                        )}
-
-
-                    {!loadingConversations &&
-                        conversations.map(
-                            (conversation) => {
-
-                                const otherUser =
-                                    getOtherParticipant(
-                                        conversation
-                                    );
-
-
-                                if (!otherUser) {
-                                    return null;
-                                }
-
-
-                                return (
-                                    <ConversationItem
-                                        key={
-                                            conversation._id
-                                        }
-
-                                        name={
-                                            conversation.isGroup
-                                                ? conversation.groupName
-                                                : otherUser.username
-                                        }
-
-                                        message={
-                                            conversation.lastMessage
-                                                ? conversation.lastMessage.content
-                                                : "No messages yet"
-                                        }
-
-                                        time={
-                                            new Date(
-                                                conversation.updatedAt
-                                            ).toLocaleTimeString(
-                                                [],
-                                                {
-                                                    hour: "2-digit",
-                                                    minute: "2-digit"
-                                                }
-                                            )
-                                        }
-
-                                        avatar={
-                                            conversation.isGroup
-                                                ? "G"
-                                                : otherUser.username
-                                                    .charAt(0)
-                                                    .toUpperCase()
-                                        }
-                                    />
-                                );
-
-                            }
-                        )}
-
-                </div>
-
-
-                {/* Bottom decoration */}
-
-                <div className="sidebar-footer">
-
-                    <div className="footer-plant">
-                        🌿
-                    </div>
-
-                    <p>
-                        Good
-                        <br />
-                        Chats
-                        <br />
-                        Brighter
-                        <br />
-                        Days
-                    </p>
-
-                    <span>
-                        ♡
-                    </span>
-
-                </div>
-
-            </aside>
-
-
-            {/* New Chat Modal */}
-
-            {showNewChat && (
-                <NewChatModal
-                    onClose={() =>
-                        setShowNewChat(false)
-                    }
-                    onConversationCreated={
-            fetchConversations
-        }
+        })
+    }
                 />
-            )}
+              );
+            })}
+        </div>
 
-        </>
-    );
+        {/* Bottom decoration */}
+
+        <div className="sidebar-footer">
+          <div className="footer-plant">🌿</div>
+
+          <p>
+            Good
+            <br />
+            Chats
+            <br />
+            Brighter
+            <br />
+            Days
+          </p>
+
+          <span>♡</span>
+        </div>
+      </aside>
+
+      {/* New Chat Modal */}
+
+      {showNewChat && (
+        <NewChatModal
+          onClose={() => setShowNewChat(false)}
+          onConversationCreated={fetchConversations}
+        />
+      )}
+    </>
+  );
 };
-
 
 export default ChatSidebar;

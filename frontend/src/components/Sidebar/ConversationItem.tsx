@@ -1,27 +1,35 @@
 import "../../styles/Dashboard.css";
 
+
 interface ConversationItemProps {
     name: string;
     message: string;
     time: string;
     avatar: string;
     unread?: number;
+    onClick: () => void;
 }
+
 
 const ConversationItem = ({
     name,
     message,
     time,
     avatar,
-    unread
+    unread,
+    onClick
 }: ConversationItemProps) => {
 
     return (
-        <div className="conversation-item">
+        <div
+            className="conversation-item"
+            onClick={onClick}
+        >
 
             <div className="conversation-avatar">
                 {avatar}
             </div>
+
 
             <div className="conversation-info">
 
@@ -37,11 +45,13 @@ const ConversationItem = ({
 
                 </div>
 
+
                 <div className="conversation-bottom">
 
                     <p>
                         {message}
                     </p>
+
 
                     {unread && (
                         <span className="unread-count">
@@ -56,5 +66,6 @@ const ConversationItem = ({
         </div>
     );
 };
+
 
 export default ConversationItem;

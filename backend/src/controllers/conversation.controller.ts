@@ -116,11 +116,11 @@ export const getMyConversations = async (
                 select:
                     "_id username email profilePicture status isOnline lastSeen"
             })
-            // .populate({
-            //     path: "lastMessage",
-            //     select:
-            //         "content sender messageType isRead createdAt"
-            // })
+            .populate({
+                path: "lastMessage",
+                select:
+                    "_id content sender messageType isRead createdAt"
+            })
             .sort({
                 updatedAt: -1
             });
