@@ -1,5 +1,5 @@
-import { useState } from "react";
-
+import { useState , useEffect } from "react";
+import {getSocket} from "../../services/socketService"
 import ChatSidebar from "../Sidebar/ChatSidebar";
 import ChatMain from "./ChatMain/ChatMain";
 
@@ -47,6 +47,65 @@ const ChatLayout = () => {
         );
 
     };
+
+
+    useEffect(() => {
+
+    console.log(
+        "ChatLayout socket effect started"
+    );
+
+    const socket = getSocket();
+
+    console.log(
+        "Socket object created:",
+        socket
+    );
+
+    const handleConnect = () => {
+
+        console.log(
+            "Frontend socket connected:",
+            socket.id
+        );
+
+    };
+
+    const handleDisconnect = () => {
+
+        console.log(
+            "Frontend socket disconnected"
+        );
+
+    };
+
+    socket.on(
+        "connect",
+        handleConnect
+    );
+
+    socket.on(
+        "disconnect",
+        handleDisconnect
+    );
+
+    socket.connect();
+
+    return () => {
+
+        socket.off(
+            "connect",
+            handleConnect
+        );
+
+        socket.off(
+            "disconnect",
+            handleDisconnect
+        );
+
+    };
+
+}, []);
 
 
     return (
