@@ -6,6 +6,8 @@ import MessageList from "./MessageList";
 import MessageInput from "./MessageInput";
 import ChatHeader from "./ChatHeader";
 
+import { getSocket } from "../../../services/socketService";
+
 import {
     getMessages,
     sendMessage
@@ -54,10 +56,10 @@ const ChatMain = ({
         useState("");
 
 
-    /*
-     * Fetch messages whenever
-     * the selected conversation changes.
-     */
+    // =====================================================
+    // FETCH OLD MESSAGES
+    // =====================================================
+
     const fetchMessages = async () => {
 
         try {
@@ -100,6 +102,10 @@ const ChatMain = ({
     };
 
 
+    // =====================================================
+    // FETCH MESSAGES WHEN CONVERSATION CHANGES
+    // =====================================================
+
     useEffect(() => {
 
         fetchMessages();
@@ -109,9 +115,139 @@ const ChatMain = ({
     ]);
 
 
-    /*
-     * Send a new message.
-     */
+    // =====================================================
+    // JOIN / LEAVE SOCKET.IO ROOM
+    // =====================================================
+
+    useEffect(() => {
+
+        const socket = getSocket();
+
+        const conversationId =
+            conversation.conversationId;
+
+
+        console.log(
+            "Joining conversation:",
+            conversationId
+        );
+
+
+        socket.emit(
+            "joinConversation",
+            conversationId
+        );
+
+
+        return () => {
+
+            console.log(
+                "Leaving conversation:",
+                conversationId
+            );
+
+
+            socket.emit(
+                "leaveConversation",
+                conversationId
+            );
+
+        };
+
+    }, [
+        conversation.conversationId
+    ]);
+
+
+    // =====================================================
+    // LISTEN FOR REAL-TIME MESSAGES
+    // =====================================================
+
+    useEffect(() => {
+
+        const socket = getSocket();
+
+
+        const handleNewMessage = (
+            newMessage: Message
+        ) => {
+
+            console.log(
+                "New message received:",
+                newMessage
+            );
+
+
+            // Make sure the message belongs
+            // to the currently open conversation
+            if (
+                newMessage.conversation !==
+                conversation.conversationId
+            ) {
+
+                return;
+
+            }
+
+
+            // Add message only if it
+            // does not already exist
+            setMessages(
+                (previousMessages) => {
+
+                    const alreadyExists =
+                        previousMessages.some(
+                            (message) =>
+                                message._id ===
+                                newMessage._id
+                        );
+
+
+                    if (alreadyExists) {
+
+                        return previousMessages;
+
+                    }
+
+
+                    return [
+                        ...previousMessages,
+                        newMessage
+                    ];
+
+                }
+            );
+
+        };
+
+
+        // Start listening for new messages
+        socket.on(
+            "newMessage",
+            handleNewMessage
+        );
+
+
+        // Remove listener when component
+        // is unmounted or conversation changes
+        return () => {
+
+            socket.off(
+                "newMessage",
+                handleNewMessage
+            );
+
+        };
+
+    }, [
+        conversation.conversationId
+    ]);
+
+
+    // =====================================================
+    // SEND MESSAGE
+    // =====================================================
+
     const handleSend = async (
         content: string
     ) => {
@@ -132,12 +268,36 @@ const ChatMain = ({
             /*
              * Immediately add the new message
              * to the current chat.
+             *
+             * The duplicate check inside the
+             * Socket.IO listener prevents the
+             * same message from being added twice.
              */
+
             setMessages(
-                (previousMessages) => [
-                    ...previousMessages,
-                    newMessage
-                ]
+                (previousMessages) => {
+
+                    const alreadyExists =
+                        previousMessages.some(
+                            (message) =>
+                                message._id ===
+                                newMessage._id
+                        );
+
+
+                    if (alreadyExists) {
+
+                        return previousMessages;
+
+                    }
+
+
+                    return [
+                        ...previousMessages,
+                        newMessage
+                    ];
+
+                }
             );
 
 
@@ -145,9 +305,9 @@ const ChatMain = ({
              * Tell ChatLayout that a message
              * was successfully sent.
              *
-             * ChatLayout will then refresh
-             * the sidebar.
+             * ChatLayout can refresh the sidebar.
              */
+
             onMessageSent();
 
 
@@ -163,7 +323,12 @@ const ChatMain = ({
     };
 
 
+    // =====================================================
+    // UI
+    // =====================================================
+
     return (
+
         <main className="chat-main">
 
 
@@ -172,6 +337,7 @@ const ChatMain = ({
                 ===================================== */}
 
             <ChatHeader
+
                 name={
                     conversation.name
                 }
@@ -183,6 +349,7 @@ const ChatMain = ({
                 isOnline={
                     conversation.isOnline
                 }
+
             />
 
 
@@ -194,20 +361,24 @@ const ChatMain = ({
 
 
                 {loading && (
+
                     <div className="message-status">
 
                         Loading messages...
 
                     </div>
+
                 )}
 
 
                 {error && (
+
                     <div className="message-status error">
 
                         {error}
 
                     </div>
+
                 )}
 
 
@@ -218,18 +389,25 @@ const ChatMain = ({
                         <div className="empty-chat">
 
                             <div className="empty-chat-icon">
+
                                 🌿
+
                             </div>
 
 
                             <h2>
+
                                 Start a conversation
+
                             </h2>
 
 
                             <p>
+
                                 Send a message to{" "}
+
                                 {conversation.name}
+
                             </p>
 
                         </div>
@@ -242,9 +420,11 @@ const ChatMain = ({
                     messages.length > 0 && (
 
                         <MessageList
+
                             messages={
                                 messages
                             }
+
                         />
 
                     )}
@@ -257,6 +437,7 @@ const ChatMain = ({
                 ===================================== */}
 
             <MessageInput
+
                 onSend={
                     handleSend
                 }
@@ -264,10 +445,13 @@ const ChatMain = ({
                 disabled={
                     loading
                 }
+
             />
 
         </main>
+
     );
+
 };
 
 

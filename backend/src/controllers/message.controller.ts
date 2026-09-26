@@ -1,18 +1,33 @@
-import {Request,Response} from "express";
+import { Request, Response } from "express";
 import mongoose from "mongoose";
-import Message from "../models/Message.js"
-import Conversation from "../models/Conversations.js"
 
-export const getMessages=async(req:Request,res:Response)=>{
-  try{
+import Message from "../models/Message.js";
+import Conversation from "../models/Conversations.js";
+import  {getIO}  from "../sockets/sockets.js";
 
-    //1.Get Logged in user from JWT
-    const currentUserId=req.user?.userId;
 
-     // 2. Get conversation ID from URL
-    const conversationId=req.params.conversationId as string;
+// =====================================================
+// GET MESSAGES
+// =====================================================
 
-     // 3. Check authentication
+export const getMessages = async (
+    req: Request,
+    res: Response
+) => {
+
+    try {
+
+        // 1. Get logged-in user from JWT
+        const currentUserId =
+            req.user?.userId;
+
+
+        // 2. Get conversation ID from URL
+        const conversationId =
+            req.params.conversationId as string;
+
+
+        // 3. Check authentication
         if (!currentUserId) {
 
             return res.status(401).json({
@@ -20,6 +35,8 @@ export const getMessages=async(req:Request,res:Response)=>{
             });
 
         }
+
+
         // 4. Validate conversation ID
         if (
             !mongoose.Types.ObjectId.isValid(
@@ -33,8 +50,9 @@ export const getMessages=async(req:Request,res:Response)=>{
 
         }
 
-         // 5. Check whether conversation exists
-        //    AND whether current user belongs to it
+
+        // 5. Check whether conversation exists
+        // AND whether current user belongs to it
         const conversation =
             await Conversation.findOne({
                 _id: conversationId,
@@ -45,29 +63,32 @@ export const getMessages=async(req:Request,res:Response)=>{
         if (!conversation) {
 
             return res.status(404).json({
-                message:
-                    "Conversation not found"
+                message: "Conversation not found"
             });
 
         }
 
-        // 6. Find messages belonging to
-        //    this conversation
+
+        // 6. Find messages belonging
+        // to this conversation
         const messages =
             await Message.find({
                 conversation: conversationId
             })
-        
-        // 7. Get basic sender information
-                .populate(
-                    "sender",
-                    "_id username profilePicture"
-                )
-        
-        // 8. Oldest → newest
-                .sort({
-                    createdAt: 1
-                });
+
+
+            // 7. Get basic sender information
+            .populate(
+                "sender",
+                "_id username profilePicture"
+            )
+
+
+            // 8. Oldest → newest
+            .sort({
+                createdAt: 1
+            });
+
 
         // 9. Send messages to frontend
         return res.status(200).json({
@@ -75,24 +96,26 @@ export const getMessages=async(req:Request,res:Response)=>{
         });
 
 
-  }catch(error){
-console.error(
+    } catch (error) {
+
+        console.error(
             "Get messages error:",
             error
         );
 
 
         return res.status(500).json({
-            message:
-                "Internal server error"
+            message: "Internal server error"
         });
-  }
-}
+
+    }
+
+};
 
 
-
-
-//Send message code
+// =====================================================
+// SEND MESSAGE
+// =====================================================
 
 export const sendMessage = async (
     req: Request,
@@ -182,6 +205,7 @@ export const sendMessage = async (
         // 8. Create message
         const message =
             await Message.create({
+
                 conversation: conversationId,
 
                 sender: currentUserId,
@@ -190,6 +214,7 @@ export const sendMessage = async (
 
                 messageType:
                     messageType || "text"
+
             });
 
 
@@ -208,7 +233,21 @@ export const sendMessage = async (
         );
 
 
-        // 11. Return created message
+        // 11. Get Socket.IO instance
+        const io = getIO();
+
+
+        // 12. Send new message
+        // to everyone inside this conversation room
+        io.to(
+            `conversation:${conversationId}`
+        ).emit(
+            "newMessage",
+            message
+        );
+
+
+        // 13. Return created message
         return res.status(201).json({
 
             message
