@@ -6,12 +6,18 @@ import authRoutes from './routes/auth.routes.js';
 import userRoutes from './routes/user.routes.js';
 import messageRoutes from "./routes/message.routes.js";
 import conversationRoutes from './routes/conversation.routes.js';
+import {createServer} from "http";
+import {initializeSocket} from "./sockets/sockets.js"
 dotenv.config();
 
 // Database
 connectDB();
 
 const app = express();
+const httpServer=createServer(app);
+
+//STEP 5 : Initialize Socket
+initializeSocket(httpServer);
 
 // Middleware to enable CORS for requests from the frontend
 app.use(
@@ -47,6 +53,6 @@ app.use(
 const PORT = process.env.PORT || 8000;
 
 // Start server
-app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+httpServer.listen(PORT, () => {
+    console.log(`HttpServer running on http://localhost:${PORT}`);
 });
