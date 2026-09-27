@@ -781,7 +781,7 @@ body,
    Its parent .message-area scrolls.
    ========================================================= */
 
-.message-list {
+/* .message-list {
     width: 100%;
 
     display: flex;
@@ -795,6 +795,13 @@ body,
     padding: 0;
 
     overflow: visible;
+} */
+
+.message-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
 }
 
 
@@ -825,7 +832,7 @@ body,
    MESSAGE BUBBLE
    ========================================================= */
 
-.message-bubble {
+/* .message-bubble {
     max-width: min(65%, 520px);
 
     padding: 11px 15px;
@@ -840,29 +847,59 @@ body,
         0 2px 8px rgba(70, 70, 60, 0.04);
 
     word-break: break-word;
+} */
+
+.message-bubble {
+    width: fit-content;
+    max-width: 65%;
+    padding: 10px 14px;
+    border-radius: 8px;
+    box-sizing: border-box;
 }
 
 
-.other-message .message-bubble {
-    background: #ebe7de;
+/* =====================================================
+   MESSAGE ALIGNMENT & COLORS
+   ===================================================== */
 
+/* Logged-in user's message
+   LEFT + WHITE */
+.message-bubble.own-message {
+    background: white;
     color: #4d554b;
 
-    border-bottom-left-radius: 5px;
+    margin-left: 0;
+    margin-right: auto;
+
+    border-radius: 7px;
 }
 
 
-.own-message .message-bubble {
-    background: #819477;
+/* Other user's message
+   RIGHT + GREEN */
+.message-bubble.other-message {
+    background: #788c70;
+    color: rgb(15, 14, 14);
 
-    color: #ffffff;
+    margin-left: auto;
+    margin-right: 0;
 
-    border-bottom-right-radius: 5px;
+    border-radius: 7px;
 }
 
+
+/* Message text */
+.message-bubble p {
+    margin: 0;
+
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
 
 .message-bubble p {
     margin: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 
