@@ -1,7 +1,7 @@
 import { Server } from "socket.io";
 import type { Server as HttpServer } from "http";
 import jwt from "jsonwebtoken";
-
+import {User} from "../models/Users.js";
 import Conversation from "../models/Conversations.js";
 
 let io: Server;
@@ -74,7 +74,7 @@ export const initializeSocket = (
 
 
     // Socket connection
-    io.on("connection", (socket) => {
+    io.on("connection", async(socket) => {
 
         console.log(
             "Socket Connected:",
@@ -85,7 +85,24 @@ export const initializeSocket = (
             "Authenticated User:",
             socket.data.userId
         );
+         
 
+        // Mark user as online
+await User.findByIdAndUpdate(
+    socket.data.userId,
+    {
+        isOnline: true,
+        lastSeen: null
+    }
+);
+
+// Broadcast online status
+io.emit("userStatus", {
+    userId: socket.data.userId,
+    isOnline: true,
+    lastSeen: null
+});
+        
 
         // Join conversation
         socket.on(
