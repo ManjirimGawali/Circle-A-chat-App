@@ -1,3 +1,5 @@
+
+import "../../../styles/Dashboard.css";
 interface ChatHeaderProps {
     name: string;
     avatar: string;

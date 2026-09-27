@@ -1,5 +1,5 @@
 import MessageBubble from "./MessageBubble";
-
+import "../../../styles/Dashboard.css";
 
 interface MessageSender {
     _id: string;

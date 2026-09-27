@@ -258,8 +258,8 @@ body,
     border: none;
 
     border-radius: 14px;
-
-    background: #788c70;
+     /* background: #788c70; */
+    background: #2e4c22;
 
     color: white;
 
@@ -1517,4 +1517,17 @@ body,
         padding-right: 12px;
     }
 
+}
+
+
+/* Logged-in user's messages */
+.message-bubble.own-message {
+    background: white;
+}
+
+
+/* Other user's messages */
+.message-bubble.other-message {
+     background: #c7d1bd;
+    /* background: #aab9a4; */
 }
