@@ -1,15 +1,17 @@
 import { Server } from "socket.io";
 import type { Server as HttpServer } from "http";
 import jwt from "jsonwebtoken";
-import {User} from "../models/Users.js";
+
+import { User } from "../models/Users.js";
 import Conversation from "../models/Conversations.js";
 
 let io: Server;
+
 export const initializeSocket = (
     httpServer: HttpServer
 ) => {
 
-     io = new Server(
+    io = new Server(
         httpServer,
         {
             cors: {
@@ -20,14 +22,16 @@ export const initializeSocket = (
     );
 
 
-    // Socket authentication
+    // ==========================================
+    // SOCKET AUTHENTICATION
+    // ==========================================
+
     io.use((socket, next) => {
 
         try {
 
             const token =
                 socket.handshake.auth.token;
-
 
             if (!token) {
 
@@ -39,7 +43,6 @@ export const initializeSocket = (
 
             }
 
-
             const decoded =
                 jwt.verify(
                     token,
@@ -48,10 +51,8 @@ export const initializeSocket = (
                     userId: string;
                 };
 
-
             socket.data.userId =
                 decoded.userId;
-
 
             next();
 
@@ -73,148 +74,231 @@ export const initializeSocket = (
     });
 
 
-    // Socket connection
-    io.on("connection", async(socket) => {
+    // ==========================================
+    // SOCKET CONNECTION
+    // ==========================================
 
-        console.log(
-            "Socket Connected:",
-            socket.id
-        );
+    io.on(
+        "connection",
+        async (socket) => {
 
-        console.log(
-            "Authenticated User:",
-            socket.data.userId
-        );
-         
+            console.log(
+                "Socket Connected:",
+                socket.id
+            );
 
-        // Mark user as online
-await User.findByIdAndUpdate(
-    socket.data.userId,
-    {
-        isOnline: true,
-        lastSeen: null
-    }
-);
-
-// Broadcast online status
-io.emit("userStatus", {
-    userId: socket.data.userId,
-    isOnline: true,
-    lastSeen: null
-});
-        
-
-        // Join conversation
-        socket.on(
-            "joinConversation",
-            async (conversationId: string) => {
-
-                try {
-
-                    const userId =
-                        socket.data.userId;
+            console.log(
+                "Authenticated User:",
+                socket.data.userId
+            );
 
 
-                    const conversation =
-                        await Conversation.findOne({
-                            _id: conversationId,
-                            participants: userId
-                        });
+            // ==========================================
+            // MARK USER AS ONLINE
+            // ==========================================
+
+            await User.findByIdAndUpdate(
+                socket.data.userId,
+                {
+                    isOnline: true,
+                    lastSeen: null
+                }
+            );
 
 
-                    if (!conversation) {
+            // Broadcast online status
+            io.emit(
+                "userStatus",
+                {
+                    userId:
+                        socket.data.userId,
+
+                    isOnline: true,
+
+                    lastSeen: null
+                }
+            );
+
+
+            // ==========================================
+            // JOIN CONVERSATION
+            // ==========================================
+
+            socket.on(
+                "joinConversation",
+                async (
+                    conversationId: string
+                ) => {
+
+                    try {
+
+                        const userId =
+                            socket.data.userId;
+
+
+                        const conversation =
+                            await Conversation.findOne(
+                                {
+                                    _id:
+                                        conversationId,
+
+                                    participants:
+                                        userId
+                                }
+                            );
+
+
+                        if (!conversation) {
+
+                            console.log(
+                                "Unauthorized conversation access:",
+                                conversationId
+                            );
+
+                            socket.emit(
+                                "socketError",
+                                {
+                                    message:
+                                        "You are not a participant in this conversation"
+                                }
+                            );
+
+                            return;
+
+                        }
+
+
+                        const roomName =
+                            `conversation:${conversationId}`;
+
+
+                        socket.join(
+                            roomName
+                        );
+
 
                         console.log(
-                            "Unauthorized conversation access:",
-                            conversationId
+                            `User ${userId} joined room ${roomName}`
+                        );
+
+                    } catch (error) {
+
+                        console.error(
+                            "Join conversation error:",
+                            error
                         );
 
                         socket.emit(
                             "socketError",
                             {
                                 message:
-                                    "You are not a participant in this conversation"
+                                    "Failed to join conversation"
                             }
                         );
 
-                        return;
                     }
 
+                }
+            );
+
+
+            // ==========================================
+            // LEAVE CONVERSATION
+            // ==========================================
+
+            socket.on(
+                "leaveConversation",
+                (
+                    conversationId: string
+                ) => {
 
                     const roomName =
                         `conversation:${conversationId}`;
 
 
-                    socket.join(roomName);
+                    socket.leave(
+                        roomName
+                    );
 
 
                     console.log(
-                        `User ${userId} joined room ${roomName}`
-                    );
-
-                } catch (error) {
-
-                    console.error(
-                        "Join conversation error:",
-                        error
-                    );
-
-                    socket.emit(
-                        "socketError",
-                        {
-                            message:
-                                "Failed to join conversation"
-                        }
+                        `Socket ${socket.id} left room ${roomName}`
                     );
 
                 }
-
-            }
-        );
+            );
 
 
-        // Leave conversation
-        socket.on(
-            "leaveConversation",
-            (conversationId: string) => {
+            // ==========================================
+            // DISCONNECT
+            // ==========================================
 
-                const roomName =
-                    `conversation:${conversationId}`;
+            socket.on(
+                "disconnect",
+                async () => {
 
-
-                socket.leave(roomName);
-
-
-                console.log(
-                    `Socket ${socket.id} left room ${roomName}`
-                );
-
-            }
-        );
+                    console.log(
+                        "Socket disconnected:",
+                        socket.id
+                    );
 
 
-        // Disconnect
-        socket.on(
-            "disconnect",
-            () => {
+                    try {
 
-                console.log(
-                    "Socket disconnected:",
-                    socket.id
-                );
+                        await User.findByIdAndUpdate(
+                            socket.data.userId,
+                            {
+                                isOnline: false,
+                                lastSeen:
+                                    new Date()
+                            }
+                        );
 
-            }
-        );
 
-    });
+                        console.log(
+                            "User marked as offline:",
+                            socket.data.userId
+                        );
+
+
+                        // Broadcast offline status
+                        io.emit(
+                            "userStatus",
+                            {
+                                userId:
+                                    socket.data.userId,
+
+                                isOnline: false,
+
+                                lastSeen:
+                                    new Date()
+                            }
+                        );
+
+                    } catch (error) {
+
+                        console.error(
+                            "Failed to update offline status:",
+                            error
+                        );
+
+                    }
+
+                }
+            );
+
+        }
+    );
 
 
     return io;
 };
 
 
+// ==========================================
+// GET SOCKET.IO INSTANCE
+// ==========================================
 
-// Get Socket.IO instance
 export const getIO = () => {
 
     if (!io) {
